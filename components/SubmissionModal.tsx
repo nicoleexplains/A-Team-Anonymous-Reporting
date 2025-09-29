@@ -1,8 +1,7 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Submission, Reply } from '../types';
-import { getAiSuggestions } from '../services/geminiService';
-import { SparklesIcon, XMarkIcon, PaperAirplaneIcon, UserIcon, UserGroupIcon } from './icons';
+import { getAiSuggestions, summarizeSuggestions } from '../services/geminiService';
+import { SparklesIcon, XMarkIcon, PaperAirplaneIcon, UserIcon, UserGroupIcon, DocumentTextIcon } from './icons';
 
 interface SubmissionModalProps {
   submission: Submission;
@@ -15,6 +14,8 @@ const SubmissionModal: React.FC<SubmissionModalProps> = ({ submission, onClose, 
   const [submitterReply, setSubmitterReply] = useState('');
   const [aiSuggestions, setAiSuggestions] = useState<string>('');
   const [isLoadingAi, setIsLoadingAi] = useState<boolean>(false);
+  const [aiSummary, setAiSummary] = useState<string>('');
+  const [isLoadingAiSummary, setIsLoadingAiSummary] = useState<boolean>(false);
 
   const handlePmReplySubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,10 +27,19 @@ const SubmissionModal: React.FC<SubmissionModalProps> = ({ submission, onClose, 
 
   const handleAISuggestions = useCallback(async () => {
     setIsLoadingAi(true);
+    setAiSummary(''); // Reset summary when getting new suggestions
     const suggestions = await getAiSuggestions(submission);
     setAiSuggestions(suggestions);
     setIsLoadingAi(false);
   }, [submission]);
+
+  const handleSummarize = async () => {
+    if (!aiSuggestions) return;
+    setIsLoadingAiSummary(true);
+    const summary = await summarizeSuggestions(aiSuggestions);
+    setAiSummary(summary);
+    setIsLoadingAiSummary(false);
+  };
 
   const handleSubmitterReplySubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,8 +108,27 @@ const SubmissionModal: React.FC<SubmissionModalProps> = ({ submission, onClose, 
                 </button>
                 {aiSuggestions && (
                     <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                        <h4 className="font-bold text-yellow-800 text-sm mb-2">AI-Powered Analysis</h4>
+                        <div className="flex justify-between items-center mb-2">
+                            <h4 className="font-bold text-yellow-800 text-sm">AI-Powered Analysis</h4>
+                            {!aiSummary && (
+                                <button
+                                    onClick={handleSummarize}
+                                    disabled={isLoadingAiSummary}
+                                    className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-yellow-800 bg-yellow-200 hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors disabled:opacity-50"
+                                >
+                                    <DocumentTextIcon className="h-4 w-4 mr-1"/>
+                                    {isLoadingAiSummary ? 'Summarizing...' : 'Summarize'}
+                                </button>
+                            )}
+                        </div>
                         <p className="text-sm text-yellow-900 whitespace-pre-wrap">{aiSuggestions}</p>
+                        
+                        {aiSummary && (
+                            <div className="mt-3 pt-3 border-t border-yellow-200">
+                                <h5 className="font-bold text-yellow-800 text-sm mb-1">Key Takeaways</h5>
+                                <p className="text-sm text-yellow-900 whitespace-pre-wrap">{aiSummary}</p>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

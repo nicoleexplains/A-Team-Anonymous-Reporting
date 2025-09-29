@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { Submission } from '../types';
 
@@ -58,3 +57,30 @@ export const getAiSuggestions = async (submission: Submission): Promise<string> 
     return "An error occurred while fetching AI suggestions. Please check your API key and network connection.";
   }
 };
+
+export const summarizeSuggestions = async (suggestions: string): Promise<string> => {
+    try {
+        const prompt = `
+            Summarize the following project management advice into a few concise, actionable bullet points.
+            Focus on the most critical steps a project manager should take.
+
+            ---
+            ADVICE:
+            ${suggestions}
+            ---
+
+            SUMMARY (as bullet points):
+        `;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+
+        return response.text;
+
+    } catch (error) {
+        console.error("Error summarizing AI suggestions:", error);
+        return "An error occurred while summarizing the suggestions.";
+    }
+}
